@@ -1,0 +1,109 @@
+{*======================================================
+  通达信指标：FFT傅里叶周期分析  （副图指标）
+  公式名: FFT_CYCLE
+
+  使用说明:
+    1. 将 TDX_FFT_DLL.dll 放入: <通达信>\T0002\dlls\
+    2. 公式管理器 -> DLL函数管理 -> 添加绑定（本例=3号）
+    3. 新建指标公式，粘贴本代码，类型选【副图】
+    4. 若绑定号不是3，全局替换 TDXDLL3 为对应号
+
+  副图说明:
+    - 归一化余弦分量曲线，范围 [-1, +1]
+    - 面板在左侧区域，深蓝底色，10行居中分布
+    - 绘制顺序：曲线先画，面板后画（覆盖曲线，避免乱序）
+    - 曲线开关：用 : 输出绘图，用 := 赋值不绘图
+
+  函数编号规则:
+    1     主计算（触发FFT）
+    2     纯趋势线（线性拟合 a*t+b，绝对价格）
+    3~10  合成曲线（3=趋势+T1, 4=趋势+T1~2, ..., 10=全合成）
+    N1    Top N 幅值     N2 周期(bar)  N3 相位(rad,余弦基)  N4 频率
+    N5    Top N 余弦分量（真实幅值，去趋势偏移量）
+    N6    Top N 归一化余弦（幅值=1）
+    相位说明: N3输出的相位 φ 为FFT余弦相位（atan2输出）
+              分量重建: A * cos(2π/P * t + φ)，t从有效段起点=0
+    例: 11=T1幅值, 12=T1周期, 13=T1相位, 15=T1余弦分量, 16=T1归一化
+        21=T2幅值, 22=T2周期, ...  91~96=T9
+*======================================================}
+
+{* ====================================================
+   参数获取（:= 不绘图）- 触发计算 + 幅值/周期
+==================================================== *}
+_CALC:=TDXDLL3(1,CLOSE,0,0);
+T1A:=TDXDLL3(11,CLOSE,0,0);   T1P:=TDXDLL3(12,CLOSE,0,0);
+T2A:=TDXDLL3(21,CLOSE,0,0);   T2P:=TDXDLL3(22,CLOSE,0,0);
+T3A:=TDXDLL3(31,CLOSE,0,0);   T3P:=TDXDLL3(32,CLOSE,0,0);
+T4A:=TDXDLL3(41,CLOSE,0,0);   T4P:=TDXDLL3(42,CLOSE,0,0);
+T5A:=TDXDLL3(51,CLOSE,0,0);   T5P:=TDXDLL3(52,CLOSE,0,0);
+T6A:=TDXDLL3(61,CLOSE,0,0);   T6P:=TDXDLL3(62,CLOSE,0,0);
+T7A:=TDXDLL3(71,CLOSE,0,0);   T7P:=TDXDLL3(72,CLOSE,0,0);
+T8A:=TDXDLL3(81,CLOSE,0,0);   T8P:=TDXDLL3(82,CLOSE,0,0);
+T9A:=TDXDLL3(91,CLOSE,0,0);   T9P:=TDXDLL3(92,CLOSE,0,0);
+
+{* ====================================================
+   第一步：先画曲线和零轴（面板尚未覆盖）
+   归一化余弦分量曲线（Top1~Top9，幅值=1，范围[-1,+1]）
+   重建公式: cos(2π/P * t + φ_cos)，与相位输出(N3)基底统一
+   开关说明：
+     开启绘图 → 用 :  例: NORM1:TDXDLL3(16,CLOSE,0,0),COLOR00FF00,LINETHICK2;
+     关闭绘图 → 用 := 例: NORM1:=TDXDLL3(16,CLOSE,0,0);
+   当前状态：全部开启（:）
+==================================================== *}
+NORM1:TDXDLL3(16,CLOSE,0,0),COLOR00FF00,LINETHICK2;
+NORM2:TDXDLL3(26,CLOSE,0,0),COLORFFFF00,LINETHICK2;
+NORM3:TDXDLL3(36,CLOSE,0,0),COLOR00FFFF,LINETHICK1;
+NORM4:TDXDLL3(46,CLOSE,0,0),COLORFF8000,LINETHICK1;
+NORM5:TDXDLL3(56,CLOSE,0,0),COLORFF00FF,LINETHICK1;
+NORM6:TDXDLL3(66,CLOSE,0,0),COLOR8080FF,LINETHICK1;
+NORM7:TDXDLL3(76,CLOSE,0,0),COLORC0C0C0,LINETHICK1;
+NORM8:TDXDLL3(86,CLOSE,0,0),COLOR808080,LINETHICK1;
+NORM9:TDXDLL3(96,CLOSE,0,0),COLOR606060,LINETHICK1;
+
+{* 零轴参考线 *}
+ZERO:0,COLORWHITE,DOTLINE;
+
+{* ====================================================
+   合成拟合曲线（绝对价格，与CLOSE同量纲）
+   开关说明：
+     开启绘图 → FIT:TDXDLL3(10,CLOSE,0,0),COLORRED,LINETHICK2;
+     关闭绘图 → FIT:=TDXDLL3(10,CLOSE,0,0);
+   当前状态：关闭（:=）
+==================================================== *}
+FIT:=TDXDLL3(10,CLOSE,0,0);
+
+{* ====================================================
+   第二步：后画面板（覆盖曲线，确保面板清晰显示）
+   面板背景矩形
+   深蓝底色
+   外边距：上下各 25，左 10（窗口坐标 0~999）
+   水平: LEFT=10, RIGHT=120
+   垂直: TOP=25, BOTTOM=975
+==================================================== *}
+DRAWRECTREL(10,25,120,975,RGB(0,30,80)),NOFRAME;
+
+{* ====================================================
+   面板文字（10行，面板内再向右缩进10单位，行间距固定100）
+   文字 X = (10+10)/1000 = 0.020（面板左10 + 内缩10）
+   Y = (50 + n*100) / 1000（面板顶25 + 内缩25 = 50起）
+     标题(n=0): Y=0.050
+     T1  (n=1): Y=0.150
+     T2  (n=2): Y=0.250
+     T3  (n=3): Y=0.350
+     T4  (n=4): Y=0.450
+     T5  (n=5): Y=0.550
+     T6  (n=6): Y=0.650
+     T7  (n=7): Y=0.750
+     T8  (n=8): Y=0.850
+     T9  (n=9): Y=0.950
+==================================================== *}
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.050,0,'分量   幅值   周期(bar)'),COLORWHITE;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.150,0,VARCAT6('T1  幅=',VAR2STR(T1A,2),'  周=',VAR2STR(T1P,0),'','')),COLOR00FF00;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.250,0,VARCAT6('T2  幅=',VAR2STR(T2A,2),'  周=',VAR2STR(T2P,0),'','')),COLORFFFF00;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.350,0,VARCAT6('T3  幅=',VAR2STR(T3A,2),'  周=',VAR2STR(T3P,0),'','')),COLOR00FFFF;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.450,0,VARCAT6('T4  幅=',VAR2STR(T4A,2),'  周=',VAR2STR(T4P,0),'','')),COLORFF8000;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.550,0,VARCAT6('T5  幅=',VAR2STR(T5A,2),'  周=',VAR2STR(T5P,0),'','')),COLORFF00FF;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.650,0,VARCAT6('T6  幅=',VAR2STR(T6A,2),'  周=',VAR2STR(T6P,0),'','')),COLOR8080FF;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.750,0,VARCAT6('T7  幅=',VAR2STR(T7A,2),'  周=',VAR2STR(T7P,0),'','')),COLORC0C0C0;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.850,0,VARCAT6('T8  幅=',VAR2STR(T8A,2),'  周=',VAR2STR(T8P,0),'','')),COLOR808080;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.950,0,VARCAT6('T9  幅=',VAR2STR(T9A,2),'  周=',VAR2STR(T9P,0),'','')),COLOR606060;

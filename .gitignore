@@ -1,0 +1,44 @@
+# Visual Studio
+.vs/
+*.sdf
+*.opensdf
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.lib
+*.exp
+*.ilk
+*.pdb
+*.ipdb
+*.iobj
+*.tlog/
+*.lastbuildstate
+*.recipe
+
+# Build logs
+build_log*.txt
+
+# RAR archives
+*.rar
+
+# DLL binaries
+*.dll
+
+# Windows
+Thumbs.db
+*.swp
+*.swo

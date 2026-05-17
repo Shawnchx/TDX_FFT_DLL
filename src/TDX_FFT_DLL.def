@@ -1,0 +1,8 @@
+; TDX_FFT_DLL.def
+; 通达信规范：只需导出 RegisterTdxFunc 一个函数
+; 其余计算函数全部为 static，通过注册表机制暴露给通达信
+
+LIBRARY TDX_FFT_DLL
+
+EXPORTS
+    RegisterTdxFunc

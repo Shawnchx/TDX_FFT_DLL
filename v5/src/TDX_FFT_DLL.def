@@ -1,0 +1,7 @@
+; TDX_FFT_DLL.def - v5版本
+; 通达信规范：只需导出 RegisterTdxFunc 一个函数
+
+LIBRARY TDX_FFT_DLL_v5
+
+EXPORTS
+    RegisterTdxFunc

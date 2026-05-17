@@ -1,0 +1,83 @@
+{*======================================================
+  通达信指标：FFT频域分量-原始幅值（副图指标）
+  公式名: FFT_SINE
+
+  使用说明:
+    1. 将 TDX_FFT_DLL.dll 放入: <通达信>\T0002\dlls\
+    2. 公式管理器 -> DLL函数管理 -> 添加绑定（本例=3号）
+    3. 新建指标公式，粘贴本代码，类型选【副图】
+    4. 若绑定号不是3，全局替换 TDXDLL3 为对应号
+
+  输出说明:
+    - 输出 Top1~Top9 各频域分量曲线，保留真实价格幅值（单位：元）
+    - 重建公式: A * cos(2π/P * t + φ_cos)，与相位输出(N3)基底统一
+    - Y轴范围由最大幅值分量决定（Top1幅值最大）
+    - 与 FFT_CYCLE 的区别：FFT_CYCLE归一化幅值=1；本指标保留真实幅值
+    - 面板：深蓝底色，10行均匀居中分布
+    - 绘制顺序：曲线先画，面板后画（覆盖曲线，避免乱序）
+
+  开关说明:
+    开启绘图 → 用 :  例: SINE1:TDXDLL3(15,CLOSE,0,0),COLOR00FF00,LINETHICK2;
+    关闭绘图 → 用 := 例: SINE1:=TDXDLL3(15,CLOSE,0,0);
+*======================================================}
+
+{* ====================================================
+   参数获取（:= 不绘图）- 触发计算 + 幅值/周期
+==================================================== *}
+_CALC:=TDXDLL3(1,CLOSE,0,0);
+T1A:=TDXDLL3(11,CLOSE,0,0);   T1P:=TDXDLL3(12,CLOSE,0,0);
+T2A:=TDXDLL3(21,CLOSE,0,0);   T2P:=TDXDLL3(22,CLOSE,0,0);
+T3A:=TDXDLL3(31,CLOSE,0,0);   T3P:=TDXDLL3(32,CLOSE,0,0);
+T4A:=TDXDLL3(41,CLOSE,0,0);   T4P:=TDXDLL3(42,CLOSE,0,0);
+T5A:=TDXDLL3(51,CLOSE,0,0);   T5P:=TDXDLL3(52,CLOSE,0,0);
+T6A:=TDXDLL3(61,CLOSE,0,0);   T6P:=TDXDLL3(62,CLOSE,0,0);
+T7A:=TDXDLL3(71,CLOSE,0,0);   T7P:=TDXDLL3(72,CLOSE,0,0);
+T8A:=TDXDLL3(81,CLOSE,0,0);   T8P:=TDXDLL3(82,CLOSE,0,0);
+T9A:=TDXDLL3(91,CLOSE,0,0);   T9P:=TDXDLL3(92,CLOSE,0,0);
+
+{* ====================================================
+   第一步：先画曲线和零轴（面板尚未覆盖）
+   Top1~Top9 余弦分量曲线（真实幅值，副图显示）
+   重建公式: A * cos(2π/P * t + φ_cos)
+   当前状态：全部开启（:）
+==================================================== *}
+SINE1:TDXDLL3(15,CLOSE,0,0),COLOR00FF00,LINETHICK2;
+SINE2:TDXDLL3(25,CLOSE,0,0),COLORFFFF00,LINETHICK2;
+SINE3:TDXDLL3(35,CLOSE,0,0),COLOR00FFFF,LINETHICK1;
+SINE4:TDXDLL3(45,CLOSE,0,0),COLORFF8000,LINETHICK1;
+SINE5:TDXDLL3(55,CLOSE,0,0),COLORFF00FF,LINETHICK1;
+SINE6:TDXDLL3(65,CLOSE,0,0),COLOR8080FF,LINETHICK1;
+SINE7:TDXDLL3(75,CLOSE,0,0),COLORC0C0C0,LINETHICK1;
+SINE8:TDXDLL3(85,CLOSE,0,0),COLOR808080,LINETHICK1;
+SINE9:TDXDLL3(95,CLOSE,0,0),COLOR606060,LINETHICK1;
+
+{* 零轴参考线 *}
+ZERO:0,COLORWHITE,DOTLINE;
+
+{* ====================================================
+   第二步：后画面板（覆盖曲线，确保面板清晰显示）
+   面板背景矩形
+   深蓝底色
+   外边距：上下各 25，左 10（窗口坐标 0~999）
+   水平: LEFT=10, RIGHT=120
+   垂直: TOP=25, BOTTOM=975
+==================================================== *}
+DRAWRECTREL(10,25,120,975,RGB(0,30,80)),NOFRAME;
+
+{* ====================================================
+   面板文字（10行，面板内再向右缩进10单位，行间距固定100）
+   文字 X = (10+10)/1000 = 0.020（面板左10 + 内缩10）
+   Y = (50 + n*100) / 1000（面板顶25 + 内缩25 = 50起）
+     标题(n=0): Y=0.050
+     T1~T9(n=1~9): Y=0.150~0.950
+==================================================== *}
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.050,0,'分量   幅值   周期(bar)'),COLORWHITE;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.150,0,VARCAT6('T1  幅=',VAR2STR(T1A,2),'  周=',VAR2STR(T1P,0),'','')),COLOR00FF00;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.250,0,VARCAT6('T2  幅=',VAR2STR(T2A,2),'  周=',VAR2STR(T2P,0),'','')),COLORFFFF00;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.350,0,VARCAT6('T3  幅=',VAR2STR(T3A,2),'  周=',VAR2STR(T3P,0),'','')),COLOR00FFFF;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.450,0,VARCAT6('T4  幅=',VAR2STR(T4A,2),'  周=',VAR2STR(T4P,0),'','')),COLORFF8000;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.550,0,VARCAT6('T5  幅=',VAR2STR(T5A,2),'  周=',VAR2STR(T5P,0),'','')),COLORFF00FF;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.650,0,VARCAT6('T6  幅=',VAR2STR(T6A,2),'  周=',VAR2STR(T6P,0),'','')),COLOR8080FF;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.750,0,VARCAT6('T7  幅=',VAR2STR(T7A,2),'  周=',VAR2STR(T7P,0),'','')),COLORC0C0C0;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.850,0,VARCAT6('T8  幅=',VAR2STR(T8A,2),'  周=',VAR2STR(T8P,0),'','')),COLOR808080;
+DRAWTEXT_FIX(ISLASTBAR,0.020,0.950,0,VARCAT6('T9  幅=',VAR2STR(T9A,2),'  周=',VAR2STR(T9P,0),'','')),COLOR606060;
